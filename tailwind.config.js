@@ -25,6 +25,11 @@ export default {
         special: "#7e22ce",
       },
       fontFamily: {
+        neuehaas: ["Neue Haas Display", "sans-serif"],
+        pangaia: ["PP Pangaia", "sans-serif"],
+        faceless: ["Faceless", "serif"],
+        pillowlava: ["Pillow Lava", "sans-serif"],
+
         satoshi: [
           "Satoshi",
           "Roboto",

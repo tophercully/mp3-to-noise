@@ -1,89 +1,19 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
+import Slider from "./Slider";
+import SoundRecorder from "./SoundRecorder";
 
-const AudioChart: React.FC<{ data: number[] }> = ({ data }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    if (!canvasRef.current || data.length === 0) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Set canvas size to 2x for higher resolution
-    const scale = window.devicePixelRatio || 1;
-    canvas.width = canvas.offsetWidth * scale;
-    canvas.height = canvas.offsetHeight * scale;
-    ctx.scale(scale, scale);
-
-    const width = canvas.width / scale;
-    const height = canvas.height / scale;
-    const maxValue = Math.max(...data);
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Draw background grid
-    ctx.strokeStyle = "#e0e0e0";
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i < 10; i++) {
-      const y = (i / 10) * height;
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(width, y);
-      ctx.stroke();
-    }
-
-    // Draw data
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-
-    data.forEach((value, index) => {
-      const x = (index / (data.length - 1)) * width;
-      const y = height - (value / maxValue) * height;
-      ctx.lineTo(x, y);
-    });
-
-    ctx.lineTo(width, height);
-    ctx.fillStyle = "rgba(51, 51, 51, 0.6)";
-    ctx.fill();
-
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Draw axis labels
-    ctx.fillStyle = "#000000";
-    ctx.font = "10px Arial";
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    for (let i = 0; i <= 10; i++) {
-      const y = height - (i / 10) * height;
-      ctx.fillText((i / 10).toFixed(1), 25, y);
-    }
-
-    // Draw time labels
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    for (let i = 0; i <= 10; i++) {
-      const x = (i / 10) * width;
-      ctx.fillText(`${i * 10}%`, x, height + 5);
-    }
-  }, [data]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ width: "100%", height: "300px" }}
-      className="w-full"
-    />
-  );
-};
+import AudioChart from "./AudioChart";
+import StyledFileInput from "./StyledFileInput";
+import BalanceIndicator from "./BalanceIndicator";
+import TooltipWrapper from "./TooltipWrapper";
 
 const AudioToNoiseConverter: React.FC = () => {
   const [audioData, setAudioData] = useState<number[]>([]);
+  const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
+
   const [interval, setInterval] = useState<number>(100);
-  const [lowerThreshold, setLowerThreshold] = useState<number>(0.0);
-  const [upperThreshold, setUpperThreshold] = useState<number>(1.0);
+  const [lowerThreshold, setLowerThreshold] = useState<number>(0.00001);
+  const [upperThreshold, setUpperThreshold] = useState<number>(1);
   const [curveStrength, setCurveStrength] = useState<number>(2);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
@@ -196,6 +126,41 @@ const AudioToNoiseConverter: React.FC = () => {
     }
   };
 
+  const handleRecordedAudio = async (audioBlob: Blob) => {
+    setRecordedAudioBlob(audioBlob); // Store the recorded audio blob
+    setIsLoading(true);
+    setProgress(0);
+
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      audioContext.current = new AudioContext();
+      const audioBuffer =
+        await audioContext.current.decodeAudioData(arrayBuffer);
+      audioBufferRef.current = audioBuffer;
+
+      processAudio();
+    } catch (error) {
+      console.error("Error processing recorded audio:", error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadAudio = () => {
+    if (recordedAudioBlob) {
+      const url = URL.createObjectURL(recordedAudioBlob);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = "recorded_audio.wav"; // You can change the file extension based on the actual format
+
+      document.body.appendChild(a);
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+  };
+
   const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newInterval = Number(e.target.value);
     setInterval(newInterval);
@@ -256,95 +221,138 @@ const AudioToNoiseConverter: React.FC = () => {
   };
 
   return (
-    <div className="flex w-full flex-col gap-4 p-4">
-      <input
-        type="file"
-        accept="audio/*"
-        onChange={handleFileUpload}
-        className="w-full rounded border border-gray-300 p-2"
-      />
-
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="interval"
-            className="font-medium"
-          >
-            Sampling Interval (ms):
-          </label>
-          <input
-            type="range"
-            id="interval"
-            min="1"
-            max="1000"
-            step="1"
-            value={interval}
-            onChange={handleIntervalChange}
-            className="w-full"
-          />
-          <span>{interval}ms</span>
+    <div className="font-neuehaas flex w-full flex-col items-center gap-4 rounded-xl p-4 tracking-wide">
+      <h1 className="font-pillowlava text-5xl font-bold italic">
+        NoiseToNoise
+      </h1>
+      {audioData.length <= 0 && (
+        <div className="flex flex-col items-center gap-12 rounded-lg p-8 shadow-lg">
+          <div className="flex w-[60ch] flex-col gap-4 text-lg">
+            <p>
+              NoiseToNoise is an audio to noise value converter and audio-data
+              manipulator.{" "}
+            </p>
+            <p>
+              Input or record some audio, and NoiseToNoise will chart the
+              amplitude of the audio file at the sample rate you specify. Adjust
+              the upper and lower thresholds (floor and ceiling) and the
+              exponential curve to weight values around the midpoint.
+            </p>
+          </div>
+          <div className="flex items-center gap-8">
+            <SoundRecorder onRecordingComplete={handleRecordedAudio} />
+            <p>OR</p>
+            {/* <input
+            type="file"
+            accept="audio/*"
+            onChange={handleFileUpload}
+            className="w-full rounded border border-gray-300 p-2"
+            /> */}
+            <StyledFileInput onFileSelect={handleFileUpload} />
+          </div>
         </div>
-
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="lowerThreshold"
-            className="font-medium"
-          >
-            Lower Threshold:
-          </label>
-          <input
-            type="range"
-            id="lowerThreshold"
-            min="0"
-            max="1"
-            step="0.001"
-            value={(Math.log10(lowerThreshold) + 5) / 5}
-            onChange={handleLowerThresholdChange}
-            className="w-full"
-          />
-          <span>{lowerThreshold.toExponential(2)}</span>
+      )}
+      {audioData.length > 0 && (
+        <div className="w-full rounded-xl border border-black p-4 shadow-lg">
+          {/* <p className="text-center">
+            Balance: {balance.toFixed(2)}% {balance > 0 ? "above" : "below"} 50%
+            </p> */}
+          <BalanceIndicator balance={balance} />
+          <AudioChart data={audioData} />
         </div>
+      )}
 
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="upperThreshold"
-            className="font-medium"
-          >
-            Upper Threshold:
-          </label>
-          <input
-            type="range"
-            id="upperThreshold"
-            min="0"
-            max="1"
-            step="0.01"
-            value={upperThreshold}
-            onChange={handleUpperThresholdChange}
-            className="w-full"
-          />
-          <span>{upperThreshold.toFixed(2)}</span>
-        </div>
+      {audioData.length > 0 && (
+        <div className="w-full rounded-xl p-4 shadow-lg">
+          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2">
+            <div className="flex flex-col rounded-lg px-4 py-2 shadow-md">
+              <TooltipWrapper tooltip="Gap between samples, lower is more detailed">
+                <h3 className="w-fit select-none font-medium">
+                  Sample Rate (ms):
+                </h3>
+              </TooltipWrapper>
 
-        <div className="flex items-center space-x-2">
-          <label
-            htmlFor="curveStrength"
-            className="font-medium"
-          >
-            Curve Strength:
-          </label>
-          <input
-            type="range"
-            id="curveStrength"
-            min="0.1"
-            max="10"
-            step="0.1"
-            value={curveStrength}
-            onChange={handleCurveStrengthChange}
-            className="w-full"
-          />
-          <span>{curveStrength.toFixed(1)}</span>
+              <Slider
+                min={1}
+                max={1000}
+                step={1}
+                value={interval}
+                onChange={handleIntervalChange}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex flex-col rounded-lg px-4 py-2 shadow-md">
+              <TooltipWrapper tooltip="Brings down the upper threshold">
+                <h3 className="w-fit select-none font-medium">Ceiling:</h3>
+              </TooltipWrapper>
+
+              <Slider
+                min={0}
+                max={1}
+                step={0.01}
+                value={upperThreshold}
+                onChange={handleUpperThresholdChange}
+                className="w-full"
+              />
+            </div>
+            <div className="flex flex-col rounded-lg px-4 py-2 shadow-md">
+              <TooltipWrapper tooltip="Use this to fine-tune balance.">
+                <h3 className="w-fit select-none font-medium">
+                  Curve Strength:
+                </h3>
+              </TooltipWrapper>
+
+              <Slider
+                min={0.1}
+                max={10}
+                step={0.1}
+                value={curveStrength}
+                onChange={handleCurveStrengthChange}
+                className="w-full"
+              />
+            </div>
+
+            <div className="flex flex-col rounded-lg px-4 py-2 shadow-md">
+              <TooltipWrapper tooltip="Brings up the lower threshold">
+                <h3 className="w-fit select-none font-medium">Floor:</h3>
+              </TooltipWrapper>
+
+              <Slider
+                min={0}
+                max={1}
+                step={0.01}
+                value={(Math.log10(lowerThreshold) + 5) / 5}
+                onChange={handleLowerThresholdChange}
+                className="w-full"
+              />
+            </div>
+
+            <div></div>
+
+            <div className="flex gap-4 pt-4">
+              <button
+                onClick={handleDownloadAudio}
+                className="w-full flex-[0.5] rounded-lg bg-white px-2 py-4 text-black shadow-md hover:bg-base-150"
+              >
+                Download Audio
+              </button>
+              <button
+                onClick={handleDownload}
+                className="w-full flex-[0.5] rounded-lg bg-white px-2 py-4 text-black shadow-md hover:bg-base-150"
+              >
+                Download JSON
+              </button>
+              <button
+                onClick={handleCopyToClipboard}
+                className="w-full flex-1 rounded-lg bg-black px-2 py-4 text-white shadow-md hover:bg-base-700"
+              >
+                {copySuccess ? "Copied to Clipboard!" : "Copy to Clipboard"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {isLoading && (
         <div className="space-y-2">
@@ -355,33 +363,6 @@ const AudioToNoiseConverter: React.FC = () => {
             ></div>
           </div>
           <p className="text-center">{progress}% processed</p>
-        </div>
-      )}
-
-      {audioData.length > 0 && (
-        <div className="space-y-4">
-          <AudioChart data={audioData} />
-          <div className="space-y-2">
-            <p className="text-center">
-              Balance: {balance.toFixed(2)}% {balance > 0 ? "above" : "below"}{" "}
-              50%
-            </p>
-            <button
-              onClick={handleDownload}
-              className="w-full rounded-sm bg-special p-2 text-white hover:brightness-90"
-            >
-              Download JSON
-            </button>
-            <button
-              onClick={handleCopyToClipboard}
-              className="w-full rounded-sm bg-success p-2 text-white hover:brightness-90"
-            >
-              Copy to Clipboard
-            </button>
-            {copySuccess && (
-              <p className="text-center text-success">Copied to clipboard!</p>
-            )}
-          </div>
         </div>
       )}
     </div>
