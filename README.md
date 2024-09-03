@@ -1,27 +1,8 @@
-# React + TypeScript + Vite
+# NoiseToNoise - Audio to Noise-Data Generator and Manipulator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Record or upload some audio, and NoiseToNoise will chart the amplitude of the audio file at the sample rate you specify. Adjust the upper and lower thresholds (floor and ceiling) and the exponential curve to weight values around the midpoint.
+<img width="1728" alt="Screenshot 2024-09-03 at 7 27 12 PM" src="https://github.com/user-attachments/assets/adef5271-db17-4b1f-bd98-502b38eb4be8">
 
-Currently, two official plugins are available:
+Use this data however you like: in procedural design, pseudo-random systems, or mock data for visualizations.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-   parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-   },
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+This project is open source, so feel free to submit issues or feature additions/requests :)
