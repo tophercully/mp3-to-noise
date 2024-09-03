@@ -222,32 +222,26 @@ const AudioToNoiseConverter: React.FC = () => {
 
   return (
     <div className="font-neuehaas flex w-full flex-col items-center gap-4 rounded-xl p-4 tracking-wide">
-      <h1 className="font-pillowlava text-5xl font-bold italic">
+      <h1 className="font-pillowlava text-3xl font-bold italic lg:text-5xl">
         NoiseToNoise
       </h1>
       {audioData.length <= 0 && (
         <div className="flex flex-col items-center gap-12 rounded-lg p-8 shadow-lg">
-          <div className="flex w-[60ch] flex-col gap-4 text-lg">
+          <div className="flex flex-col gap-4 text-lg lg:w-[60ch]">
             <p>
               NoiseToNoise is an audio to noise value converter and audio-data
               manipulator.{" "}
             </p>
             <p>
-              Input or record some audio, and NoiseToNoise will chart the
+              Record or upload some audio, and NoiseToNoise will chart the
               amplitude of the audio file at the sample rate you specify. Adjust
               the upper and lower thresholds (floor and ceiling) and the
               exponential curve to weight values around the midpoint.
             </p>
           </div>
-          <div className="flex items-center gap-8">
+          <div className="flex flex-col items-center gap-8 lg:flex-row">
             <SoundRecorder onRecordingComplete={handleRecordedAudio} />
             <p>OR</p>
-            {/* <input
-            type="file"
-            accept="audio/*"
-            onChange={handleFileUpload}
-            className="w-full rounded border border-gray-300 p-2"
-            /> */}
             <StyledFileInput onFileSelect={handleFileUpload} />
           </div>
         </div>

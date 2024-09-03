@@ -4,9 +4,9 @@ import Page from "./components/page";
 function App() {
   return (
     <Page>
-      <div className="flex h-full w-full items-center justify-center">
-        <AudioToNoiseConverter />
-      </div>
+      {/* <div className="flex h-full w-full items-center justify-center"> */}
+      <AudioToNoiseConverter />
+      {/* </div> */}
     </Page>
   );
 }
